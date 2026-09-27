@@ -102,8 +102,9 @@ const workouts = {
 function showWorkout(day) {
 
     const workout = workouts[day];
-
     const display = document.getElementById("workout-display");
+
+    if (!display || !workout) return;
 
     let html = `
         <div class="workout-header">
@@ -116,19 +117,10 @@ function showWorkout(day) {
 
         html += `
             <div class="exercise">
-
                 <div>
-
-                    <strong>
-                        ${exercise[0]}
-                    </strong>
-
-                    <p>
-                        ${exercise[1]}
-                    </p>
-
+                    <strong>${exercise[0]}</strong>
+                    <p>${exercise[1]}</p>
                 </div>
-
             </div>
         `;
 
@@ -154,27 +146,21 @@ const dietMeals = [
 let dietProgress = {};
 
 
-/* Get today's local date */
-
 function getTodayKey() {
 
     const now = new Date();
 
     const year = now.getFullYear();
-
-    const month = String(
-        now.getMonth() + 1
-    ).padStart(2, "0");
-
-    const day = String(
-        now.getDate()
-    ).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 }
 
 
-/* Load today's progress */
+/* =========================
+   LOAD DIET
+========================= */
 
 function loadDietProgress() {
 
@@ -187,19 +173,13 @@ function loadDietProgress() {
     if (saved) {
 
         try {
-
             dietProgress = JSON.parse(saved);
-
         } catch (error) {
-
             dietProgress = {};
-
         }
 
     } else {
-
         dietProgress = {};
-
     }
 
 
@@ -216,19 +196,20 @@ function loadDietProgress() {
         .querySelectorAll(".diet-card")
         .forEach(card => {
 
-            const meal =
-                card.dataset.meal;
+            const meal = card.dataset.meal;
 
             const checkbox =
-                card.querySelector(
-                    'input[type="checkbox"]'
+                card.querySelector('input[type="checkbox"]');
+
+            if (checkbox) {
+
+                checkbox.checked =
+                    dietProgress[meal] === true;
+
+                card.classList.toggle(
+                    "completed",
+                    checkbox.checked
                 );
-
-            if (checkbox && dietProgress[meal]) {
-
-                checkbox.checked = true;
-
-                card.classList.add("completed");
 
             }
 
@@ -237,7 +218,9 @@ function loadDietProgress() {
 }
 
 
-/* Save progress */
+/* =========================
+   SAVE DIET
+========================= */
 
 function saveDietProgress() {
 
@@ -252,7 +235,9 @@ function saveDietProgress() {
 }
 
 
-/* Toggle meal */
+/* =========================
+   TOGGLE DIET MEAL
+========================= */
 
 function toggleDietMeal(meal, completed) {
 
@@ -265,36 +250,31 @@ function toggleDietMeal(meal, completed) {
 
     if (card) {
 
-        if (completed) {
-
-            card.classList.add("completed");
-
-        } else {
-
-            card.classList.remove("completed");
-
-        }
+        card.classList.toggle(
+            "completed",
+            completed
+        );
 
     }
 
     saveDietProgress();
-
     updateDietProgress();
 
 }
 
 
-/* Update progress */
+/* =========================
+   UPDATE DIET PROGRESS
+========================= */
 
 function updateDietProgress() {
 
     const completedMeals =
         dietMeals.filter(
-            meal => dietProgress[meal]
+            meal => dietProgress[meal] === true
         ).length;
 
-    const totalMeals =
-        dietMeals.length;
+    const totalMeals = dietMeals.length;
 
     const percentage =
         Math.round(
@@ -302,44 +282,50 @@ function updateDietProgress() {
         );
 
 
-    document.getElementById(
-        "diet-percentage"
-    ).textContent =
-        `${percentage}%`;
+    /* CORRECT HTML IDs */
+
+    const percentageElement =
+        document.getElementById("dietPercentage");
+
+    const progressBar =
+        document.getElementById("dietProgressBar");
+
+    const countElement =
+        document.getElementById("dietCount");
 
 
-    document.getElementById(
-        "diet-progress"
-    ).style.width =
-        `${percentage}%`;
+    if (percentageElement) {
+        percentageElement.textContent =
+            `${percentage}%`;
+    }
 
+    if (progressBar) {
+        progressBar.style.width =
+            `${percentage}%`;
+    }
 
-    document.getElementById(
-        "diet-count"
-    ).textContent =
-        `${completedMeals} / ${totalMeals} meals completed`;
+    if (countElement) {
+        countElement.textContent =
+            `${completedMeals} / ${totalMeals} meals completed`;
+    }
 
 }
 
 
-/* Reset today's diet */
+/* =========================
+   RESET DIET
+========================= */
 
 function resetDietProgress() {
 
     const confirmed =
-        confirm(
-            "Reset today's diet progress?"
-        );
+        confirm("Reset today's diet progress?");
 
-    if (!confirmed) {
-        return;
-    }
+    if (!confirmed) return;
 
 
     dietMeals.forEach(meal => {
-
         dietProgress[meal] = false;
-
     });
 
 
@@ -362,8 +348,229 @@ function resetDietProgress() {
 
 
     saveDietProgress();
-
     updateDietProgress();
+
+}
+
+
+/* =========================
+   SUPPLEMENT TRACKER
+========================= */
+
+const supplements = [
+    "creatine",
+    "whey",
+    "fishoil"
+];
+
+let supplementProgress = {};
+
+
+/* =========================
+   LOAD SUPPLEMENTS
+========================= */
+
+function loadSupplementProgress() {
+
+    const saved =
+        localStorage.getItem(
+            "pavanLiftsSupplements"
+        );
+
+    if (saved) {
+
+        try {
+            supplementProgress =
+                JSON.parse(saved);
+        } catch (error) {
+            supplementProgress = {};
+        }
+
+    } else {
+        supplementProgress = {};
+    }
+
+
+    supplements.forEach(supplement => {
+
+        if (
+            typeof supplementProgress[supplement]
+            !== "boolean"
+        ) {
+            supplementProgress[supplement] = false;
+        }
+
+    });
+
+
+    document
+        .querySelectorAll(".supplement-card")
+        .forEach(card => {
+
+            const supplement =
+                card.dataset.supplement;
+
+            const checkbox =
+                card.querySelector(
+                    'input[type="checkbox"]'
+                );
+
+            if (checkbox) {
+
+                checkbox.checked =
+                    supplementProgress[supplement] === true;
+
+                card.classList.toggle(
+                    "completed",
+                    checkbox.checked
+                );
+
+            }
+
+        });
+
+}
+
+
+/* =========================
+   TOGGLE SUPPLEMENT
+========================= */
+
+function toggleSupplement(
+    supplement,
+    completed
+) {
+
+    supplementProgress[supplement] =
+        completed;
+
+
+    const card =
+        document.querySelector(
+            `.supplement-card[data-supplement="${supplement}"]`
+        );
+
+
+    if (card) {
+
+        card.classList.toggle(
+            "completed",
+            completed
+        );
+
+    }
+
+
+    localStorage.setItem(
+        "pavanLiftsSupplements",
+        JSON.stringify(supplementProgress)
+    );
+
+
+    updateSupplementProgress();
+
+}
+
+
+/* =========================
+   UPDATE SUPPLEMENTS
+========================= */
+
+function updateSupplementProgress() {
+
+    const completed =
+        supplements.filter(
+            supplement =>
+                supplementProgress[supplement] === true
+        ).length;
+
+    const total =
+        supplements.length;
+
+    const percentage =
+        Math.round(
+            (completed / total) * 100
+        );
+
+
+    const percentageElement =
+        document.getElementById(
+            "supplementPercentage"
+        );
+
+    const progressBar =
+        document.getElementById(
+            "supplementProgressBar"
+        );
+
+    const countElement =
+        document.getElementById(
+            "supplementCount"
+        );
+
+
+    if (percentageElement) {
+        percentageElement.textContent =
+            `${percentage}%`;
+    }
+
+    if (progressBar) {
+        progressBar.style.width =
+            `${percentage}%`;
+    }
+
+    if (countElement) {
+        countElement.textContent =
+            `${completed} / ${total} supplements completed`;
+    }
+
+}
+
+
+/* =========================
+   RESET SUPPLEMENTS
+========================= */
+
+function resetSupplementProgress() {
+
+    const confirmed =
+        confirm(
+            "Reset today's supplement progress?"
+        );
+
+    if (!confirmed) return;
+
+
+    supplements.forEach(supplement => {
+        supplementProgress[supplement] = false;
+    });
+
+
+    document
+        .querySelectorAll(".supplement-card")
+        .forEach(card => {
+
+            card.classList.remove("completed");
+
+            const checkbox =
+                card.querySelector(
+                    'input[type="checkbox"]'
+                );
+
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+
+        });
+
+
+    localStorage.setItem(
+        "pavanLiftsSupplements",
+        JSON.stringify(supplementProgress)
+    );
+
+
+    updateSupplementProgress();
 
 }
 
@@ -379,8 +586,10 @@ document.addEventListener(
         showWorkout("monday");
 
         loadDietProgress();
-
         updateDietProgress();
+
+        loadSupplementProgress();
+        updateSupplementProgress();
 
     }
 );
